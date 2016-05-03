@@ -1,5 +1,13 @@
 # Example Opentracing App
 
+## Building
+
+If you are missing dependencies, run `go get ./...`.
+
+Make sure that you have Go installed, then run `go build`. Alternatively,
+you can build the application using docker by running `scripts/docker_build.sh`.
+
+## Running
 This is a trivial example app that demonstrates how OpenTracing can be
 used with!
 
@@ -8,6 +16,15 @@ start a new Appdash server and write all of your traces to it. However,
 if you want to use a different tracer system, i.e. Lighstep, all you have
 to do is pass the flag `--lighstep.token=ACCESS_TOKEN`.
 
-## Building
+### Docker
+A prebuilt docker image already exists. Run
+`docker run --rm -ti -p 8080:8080 -p 8700 bg451/opentracing-example`.
+If you run the docker image, you might not be able to
+access the various endpoints through localhost. If using docker machine.
+`docker-machine ip MY_MACHINE` will give you the IP you should access the
+addresses at, i.e. `123.45.67.123:8700/traces`.
 
-Make sure that you have Go installed, then run `go build`.
+
+## Todo
+
+* Add a second process that's in a different language, i.e. python.
