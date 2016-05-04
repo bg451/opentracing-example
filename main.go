@@ -16,7 +16,7 @@ import (
 var (
 	port           = flag.Int("port", 8080, "Example app port.")
 	appdashPort    = flag.Int("appdash.port", 8700, "Run appdash locally on this port.")
-	lightstepToken = flag.String("lighstep.token", "", "Lightstep access token.")
+	lightstepToken = flag.String("lightstep.token", "", "Lightstep access token.")
 )
 
 func main() {
