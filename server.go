@@ -20,7 +20,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 	asyncReq, _ := http.NewRequest("GET", "http://localhost:8080/async", nil)
 	// Inject the trace information into the HTTP Headers.
-	err := sp.Tracer().Inject(sp, opentracing.TextMap, opentracing.HTTPHeaderTextMapCarrier(asyncReq.Header))
+	err := sp.Tracer().Inject(sp.Context(), opentracing.TextMap, opentracing.HTTPHeaderTextMapCarrier(asyncReq.Header))
 	if err != nil {
 		log.Fatalf("%s: Couldn't inject headers (%v)", r.URL.Path, err)
 	}
@@ -35,7 +35,9 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	sleepMilli(10)
 	syncReq, _ := http.NewRequest("GET", "http://localhost:8080/service", nil)
 	// Inject the trace info into the headers.
-	err = sp.Tracer().Inject(sp, opentracing.TextMap, opentracing.HTTPHeaderTextMapCarrier(syncReq.Header))
+	err = sp.Tracer().Inject(sp.Context(),
+		opentracing.TextMap,
+		opentracing.HTTPHeaderTextMapCarrier(syncReq.Header))
 	if err != nil {
 		log.Fatalf("%s: Couldn't inject headers (%v)", r.URL.Path, err)
 	}
@@ -48,12 +50,12 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 func serviceHandler(w http.ResponseWriter, r *http.Request) {
 	opName := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
-	// Attempt to join a trace by getting trace info from the headers.
-	sp, err := opentracing.GlobalTracer().Join(opName,
-		opentracing.TextMap,
+	var sp opentracing.Span
+	spCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
 		opentracing.HTTPHeaderTextMapCarrier(r.Header))
-	if err != nil {
-		// If for whatever reason we can't join a trace, we start a new root span.
+	if err == nil {
+		sp = opentracing.StartSpan(opName, opentracing.ChildOf(spCtx))
+	} else {
 		sp = opentracing.StartSpan(opName)
 	}
 	defer sp.Finish()
@@ -61,7 +63,9 @@ func serviceHandler(w http.ResponseWriter, r *http.Request) {
 	sleepMilli(50)
 
 	dbReq, _ := http.NewRequest("GET", "http://localhost:8080/db", nil)
-	err = sp.Tracer().Inject(sp, opentracing.TextMap, opentracing.HTTPHeaderTextMapCarrier(dbReq.Header))
+	err = sp.Tracer().Inject(sp.Context(),
+		opentracing.TextMap,
+		opentracing.HTTPHeaderTextMapCarrier(dbReq.Header))
 	if err != nil {
 		log.Fatalf("%s: Couldn't inject headers (%v)", r.URL.Path, err)
 	}
@@ -72,12 +76,18 @@ func serviceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func dbHandler(w http.ResponseWriter, r *http.Request) {
-	sp, err := opentracing.GlobalTracer().Join("GET /db",
-		opentracing.TextMap,
+	var sp opentracing.Span
+
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
 		opentracing.HTTPHeaderTextMapCarrier(r.Header))
 	if err != nil {
 		log.Println("%s: Could not join trace (%v)", r.URL.Path, err)
 		return
+	}
+	if err == nil {
+		sp = opentracing.StartSpan("GET /db", opentracing.ChildOf(spanCtx))
+	} else {
+		sp = opentracing.StartSpan("GET /db")
 	}
 	defer sp.Finish()
 	sleepMilli(25)
