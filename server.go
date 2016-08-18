@@ -20,7 +20,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 	asyncReq, _ := http.NewRequest("GET", "http://localhost:8080/async", nil)
 	// Inject the trace information into the HTTP Headers.
-	err := sp.Tracer().Inject(sp.Context(), opentracing.TextMap, opentracing.HTTPHeaderTextMapCarrier(asyncReq.Header))
+	err := sp.Tracer().Inject(sp.Context(), opentracing.TextMap, opentracing.HTTPHeadersCarrier(asyncReq.Header))
 	if err != nil {
 		log.Fatalf("%s: Couldn't inject headers (%v)", r.URL.Path, err)
 	}
@@ -37,7 +37,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	// Inject the trace info into the headers.
 	err = sp.Tracer().Inject(sp.Context(),
 		opentracing.TextMap,
-		opentracing.HTTPHeaderTextMapCarrier(syncReq.Header))
+		opentracing.HTTPHeadersCarrier(syncReq.Header))
 	if err != nil {
 		log.Fatalf("%s: Couldn't inject headers (%v)", r.URL.Path, err)
 	}
@@ -52,7 +52,7 @@ func serviceHandler(w http.ResponseWriter, r *http.Request) {
 	opName := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 	var sp opentracing.Span
 	spCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.HTTPHeaderTextMapCarrier(r.Header))
+		opentracing.HTTPHeadersCarrier(r.Header))
 	if err == nil {
 		sp = opentracing.StartSpan(opName, opentracing.ChildOf(spCtx))
 	} else {
@@ -65,7 +65,7 @@ func serviceHandler(w http.ResponseWriter, r *http.Request) {
 	dbReq, _ := http.NewRequest("GET", "http://localhost:8080/db", nil)
 	err = sp.Tracer().Inject(sp.Context(),
 		opentracing.TextMap,
-		opentracing.HTTPHeaderTextMapCarrier(dbReq.Header))
+		opentracing.HTTPHeadersCarrier(dbReq.Header))
 	if err != nil {
 		log.Fatalf("%s: Couldn't inject headers (%v)", r.URL.Path, err)
 	}
@@ -79,7 +79,7 @@ func dbHandler(w http.ResponseWriter, r *http.Request) {
 	var sp opentracing.Span
 
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.TextMap,
-		opentracing.HTTPHeaderTextMapCarrier(r.Header))
+		opentracing.HTTPHeadersCarrier(r.Header))
 	if err != nil {
 		log.Println("%s: Could not join trace (%v)", r.URL.Path, err)
 		return
