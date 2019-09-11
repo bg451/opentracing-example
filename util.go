@@ -12,11 +12,11 @@ import (
 )
 
 // Returns the remote collector address.
-func startAppdashServer(appdashPort int) string {
+func startAppdashServer(appdashPort string) string {
 	store := appdash.NewMemoryStore()
 
 	// Listen on any available TCP port locally.
-	l, err := net.ListenTCP("tcp", &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 0})
+	l, err := net.ListenTCP("tcp", &net.TCPAddr{IP: []byte(""), Port: 0})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func startAppdashServer(appdashPort int) string {
 	go cs.Start()
 
 	// Print the URL at which the web UI will be running.
-	appdashURLStr := fmt.Sprintf("http://localhost:%d", appdashPort)
+	appdashURLStr := fmt.Sprintf("http://%s", appdashPort)
 	appdashURL, err := url.Parse(appdashURLStr)
 	if err != nil {
 		log.Fatalf("Error parsing %s: %s", appdashURLStr, err)
@@ -43,7 +43,7 @@ func startAppdashServer(appdashPort int) string {
 	tapp.Store = store
 	tapp.Queryer = store
 	go func() {
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", appdashPort), tapp))
+		log.Fatal(http.ListenAndServe(fmt.Sprintf("%s", appdashPort), tapp))
 	}()
 	return fmt.Sprintf(":%d", collectorPort)
 }

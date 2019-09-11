@@ -15,7 +15,8 @@ import (
 
 var (
 	port           = flag.Int("port", 8080, "Example app port.")
-	appdashPort    = flag.Int("appdash.port", 8700, "Run appdash locally on this port.")
+	appdashAddr    = flag.String("appdash.addr", "localhost", "Run appdash on this addr.")
+	appdashPort    = flag.Int("appdash.port", 8700, "Run appdash on this port.")
 	lightstepToken = flag.String("lightstep.token", "", "Lightstep access token.")
 )
 
@@ -28,7 +29,8 @@ func main() {
 	if len(*lightstepToken) > 0 {
 		tracer = lightstepot.NewTracer(lightstepot.Options{AccessToken: *lightstepToken})
 	} else {
-		addr := startAppdashServer(*appdashPort)
+		appdashHost := fmt.Sprintf("%s:%d", *appdashAddr,*appdashPort)
+		addr := startAppdashServer(appdashHost)
 		tracer = appdashot.NewTracer(appdash.NewRemoteCollector(addr))
 	}
 
@@ -41,6 +43,6 @@ func main() {
 	mux.HandleFunc("/async", serviceHandler)
 	mux.HandleFunc("/service", serviceHandler)
 	mux.HandleFunc("/db", dbHandler)
-	fmt.Printf("Go to http://localhost:%d/home to start a request!\n", *port)
+	fmt.Printf("Go to http://%s:%d/home to start a request!\n", *appdashAddr, *port)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
